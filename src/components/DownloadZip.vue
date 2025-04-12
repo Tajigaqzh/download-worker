@@ -5,7 +5,7 @@
 
 <script lang="ts" setup>
 
-let downloadWorker = null;
+let downloadWorker :any= null;
 
 function startDownload() {
   //
