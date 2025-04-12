@@ -1,0 +1,25 @@
+{
+  "name": "download-worker",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc -b && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@vueuse/core": "^13.1.0",
+    "dayjs": "^1.11.13",
+    "uuid": "^11.1.0",
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
+    "@types/uuid": "^10.0.0",
+    "@vitejs/plugin-vue": "^5.2.1",
+    "@vue/tsconfig": "^0.7.0",
+    "typescript": "~5.7.2",
+    "vite": "^6.2.0",
+    "vue-tsc": "^2.2.4"
+  }
+}
