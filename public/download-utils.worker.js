@@ -26,8 +26,6 @@
     self.DOWNLOAD_ERROR_WORKER = {
         INVALID_URL: 1001,
         NETWORK_ERROR: 1002,
-
-
         HTTP_ERROR: {
             code: 1003,
             message: 'HTTP Error'

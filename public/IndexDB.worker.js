@@ -8,8 +8,13 @@
         #db = null;
         #storeConfigs = [];
         #dbName = "";
+        #batchMax = 100;
 
-        constructor(dbName, maxInitialLimitCount = 1000) {
+        constructor({
+                        dbName,
+                        batchMax = 100,
+                        maxInitialLimitCount = 1000
+                    }) {
             if (!dbName || dbName.trim().length === 0) {
                 throw new Error("db name error");
             }
@@ -20,6 +25,7 @@
                 return IndexedDBSingleton.#instance;
             }
             this.#dbName = dbName;
+            this.#batchMax = batchMax;
             IndexedDBSingleton.#instance = this;
         }
 
@@ -241,7 +247,7 @@
          * @param dataList 数据列表
          * @param batchSize 分批大小（默认100）
          */
-        async addAll(storeName, dataList, batchSize = 100) {
+        async addAll(storeName, dataList, batchSize = this.#batchMax) {
             let total = 0;
             for (let i = 0; i < dataList.length; i += batchSize) {
                 const batch = dataList.slice(i, i + batchSize);
@@ -269,11 +275,12 @@
 
         /**
          * 获取所有数据
+         * @param storeName 表名
          * @param query 主键key或比较条件
          * @param count 数量
          */
-        async getAll(query, count) {
-            return this.#execute("mandarinTestDB", "readonly", (store) => {
+        async getAll(storeName, query, count) {
+            return this.#execute(storeName, "readonly", (store) => {
                 return store.getAll(query, count);
             });
         }
@@ -326,7 +333,7 @@
          * @param batchSize
          * @returns {Promise<number>}
          */
-        async putAll(storeName, dataList, batchSize = 100) {
+        async putAll(storeName, dataList, batchSize = this.#batchMax) {
             let total = 0;
             for (let i = 0; i < dataList.length; i += batchSize) {
                 const batch = dataList.slice(i, i + batchSize);
@@ -360,7 +367,7 @@
          * @param keys 主键列表
          * @param batchSize 分批大小（默认100）
          */
-        async deleteAll(storeName, keys = [], batchSize = 100) {
+        async deleteAll(storeName, keys = [], batchSize = this.#batchMax) {
             let total = 0;
             for (let i = 0; i < keys.length; i += batchSize) {
                 const batch = keys.slice(i, i + batchSize);

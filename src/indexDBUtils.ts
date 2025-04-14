@@ -1,20 +1,37 @@
-//,创建，删除表，都会更新version ，创建删除的总计操作不要超过1000次
-const maxReInitialLizedCount = 1000;
+interface IndexedDBSingletonOptions {
+    dbName: string,
+    batchMax?: number,
+    maxInitialLimitCount?: number
+}
 
-
+// interface DKey
 class IndexedDBSingleton {
     private static instance: IndexedDBSingleton;
     private db: IDBDatabase | null = null;
     private dbName: string = "classPlatWebDB";
     private version: number = 1;
     private storeConfigs: StoreConfig[] = [];
+    private batchMax = 100;
+    private maxReInitialLimitCount = 1000;
 
-    constructor(dbName: string = "classPlatWebDB") {
+
+    constructor({
+                    dbName,
+                    batchMax = 100,
+                    maxInitialLimitCount = 1000
+                }: IndexedDBSingletonOptions) {
+        if (!dbName || dbName.trim().length === 0) {
+            throw new Error("db name error");
+        }
+        if (maxInitialLimitCount && maxInitialLimitCount > this.maxReInitialLimitCount) {
+            this.maxReInitialLimitCount = maxInitialLimitCount;
+        }
+
         if (IndexedDBSingleton.instance) {
             return IndexedDBSingleton.instance;
         }
-
         this.dbName = dbName;
+        this.batchMax = batchMax;
         IndexedDBSingleton.instance = this;
     }
 
@@ -64,7 +81,7 @@ class IndexedDBSingleton {
             });
         };
 
-        while (currentTryTimes < maxReInitialLizedCount && !reInitialLized) {
+        while (currentTryTimes < this.maxReInitialLimitCount && !reInitialLized) {
             const initRes = await initFn();
             currentTryTimes++;
             if (initRes) {
@@ -197,11 +214,12 @@ class IndexedDBSingleton {
 
     /**
      * 获取所有数据
+     * @param storeName
      * @param query 主键key或比较条件
      * @param count 数量
      */
-    public async getAll<T>(query?: IDBValidKey | IDBKeyRange | null, count?: number): Promise<T[]> {
-        return this.execute("mandarinTestDB", "readonly", (store) => {
+    public async getAll<T>(storeName: string, query?: IDBValidKey | IDBKeyRange | null, count?: number): Promise<T[]> {
+        return this.execute(storeName, "readonly", (store) => {
             return store.getAll(query, count);
         });
     }
@@ -246,6 +264,29 @@ class IndexedDBSingleton {
         });
     }
 
+
+    /**
+     * 批量put
+     * @param storeName
+     * @param dataList
+     * @param batchSize
+     */
+    async putAll<T>(storeName: string, dataList: Array<T>, batchSize: number = this.batchMax) {
+        let total = 0;
+        for (let i = 0; i < dataList.length; i += batchSize) {
+            const batch = dataList.slice(i, i + batchSize);
+            const count = await this.executeBatch<T>(
+                storeName,
+                "readwrite",
+                (store, item) => store.put(item),
+                batch
+            );
+            total += count;
+        }
+        return total;
+
+    }
+
     /**
      * @example db.delete("storeName", { id: 1, name: "test" });
      * 删除数据
@@ -256,6 +297,28 @@ class IndexedDBSingleton {
         return this.execute(storeName, "readwrite", (store) => {
             return store.delete(key);
         });
+    }
+
+
+    /**
+     * 批量删除数据
+     * @param storeName 存储对象名称
+     * @param keys 主键列表
+     * @param batchSize 分批大小（默认100）
+     */
+    public async deleteAll(storeName: string, keys: Array<IDBValidKey> = [], batchSize = this.batchMax) {
+        let total: number = 0;
+        for (let i = 0; i < keys.length; i += batchSize) {
+            const batch = keys.slice(i, i + batchSize);
+            const count: number = await this.executeBatch<IDBValidKey>(
+                storeName,
+                "readwrite",
+                (store, key) => store.delete(key),
+                batch
+            );
+            total += count;
+        }
+        return total;
     }
 
     /**
@@ -293,6 +356,63 @@ class IndexedDBSingleton {
             transaction.onerror = () => reject(transaction.error);
         });
     }
+
+
+    /**
+     * 通用批量事务执行方法
+     * @param storeName
+     * @param mode
+     * @param operation
+     * @param batch
+     * @returns {Promise<unknown>}
+     */
+    async executeBatch<T>(storeName: string,
+                          mode: IDBTransactionMode,
+                          operation: (store: IDBObjectStore, item: T) => IDBRequest, batch: Array<T>): Promise<number> {
+        if (!this.db) {
+            throw new Error("Database not initialized");
+        }
+        return new Promise((resolve, reject) => {
+            let successCount = 0;
+            let errorOccurred = false;
+
+            const transaction = this.db!.transaction(storeName, mode);
+            const store = transaction.objectStore(storeName);
+
+            batch && batch.forEach((item) => {
+                if (errorOccurred) return Promise.reject(successCount);
+
+                let request;
+                try {
+                    // 执行具体操作（put/add/delete等）
+                    request = operation(store, item);
+                } catch (error) {
+                    errorOccurred = true;
+                    transaction.abort();
+                    reject(error);
+                    return;
+                }
+                request.onsuccess = () => {
+                    successCount++;
+                };
+
+                request.onerror = (event) => {
+                    errorOccurred = true;
+                    transaction.abort();
+                    // console.log()
+                    reject(event.target);
+                };
+
+            })
+
+            transaction.oncomplete = () => {
+                if (!errorOccurred) resolve(successCount);
+            };
+            transaction.onerror = () => reject(transaction.error);
+        });
+
+    }
+
 }
 
 // 类型定义
@@ -309,7 +429,9 @@ interface IndexConfig {
 }
 
 // 创建并导出单例实例
-const dbInstance = new IndexedDBSingleton();
+const dbInstance = new IndexedDBSingleton({
+    dbName: "classPlatWebDB"
+});
 // initialize，内部包含更新版本号，是异步的，必须要await
 await dbInstance.initialize();
 
