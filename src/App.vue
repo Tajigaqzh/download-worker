@@ -13,10 +13,10 @@ import {useFileDialog, useWebWorker} from '@vueuse/core'
 import {v4 as uuidV4} from 'uuid';
 import {DOWNLOAD_STATUS} from "./DownLoadStatus.ts";
 
-//                     "filePath": "https://fileoss.zaichengzhang.net/Oss/ClassPlatWeb/Video/20250418/a11b0a9a-b759-4f99-ae8d-b3d08a56daab.mp4",
+//"filePath": "https://fileoss.zaichengzhang.net/Oss/ClassPlatWeb/Video/20250418/a11b0a9a-b759-4f99-ae8d-b3d08a56daab.mp4",
 
 // import
-const {data, post, terminate, worker} = useWebWorker('download.worker.js')
+const {data, post, terminate, worker} = useWebWorker('download/download.worker.js')
 
 const taskId = ref("")
 
