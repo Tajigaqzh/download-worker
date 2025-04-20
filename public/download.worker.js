@@ -49,6 +49,28 @@ importScripts("./download-utils.worker.js");
                 })
 
             }
+
+
+            /**
+             * 单独计一个任务状态的表，不然下载文件大的话，频繁读写带blob缓存的数据消耗大
+             */
+            if (!dbInstance.isExistTable("taskStatus")) {
+                await dbInstance.addStore({
+                    name: "taskStatus",
+                    options: {
+                        keyPath: "taskId",
+                    },
+                    indexes: [
+                        {
+                            name: "taskIdIndex",
+                            keyPath: "taskId",
+                            options: {
+                                unique: true
+                            }
+                        },
+                    ]
+                })
+            }
             isInitDB = true;
 
         } catch (e) {
@@ -80,7 +102,8 @@ importScripts("./download-utils.worker.js");
         const loaderConfig = {
             maxConcurrent: 10,
             maxRetries: 3,
-            tableName: "uploadTask"
+            tableName: "uploadTask",
+            statusTableName: "taskStatus"
         }
 
 
@@ -115,10 +138,17 @@ importScripts("./download-utils.worker.js");
     /**
      * 暂停下载
      * @returns {Promise<void>}
-     * @param taskId
      */
-    async function pauseProcessTask(taskId) {
-
+    async function pauseProcessTask(data) {
+        if (isInitDB) {
+            switch (data.downloadType) {
+                case DOWNLOAD_TYPE_WORKER.FILE_LIST: {
+                    console.log("收到指令",data);
+                    await listDownLoaderInstance.pauseTask(data.taskId);
+                    break;
+                }
+            }
+        }
 
     }
 
@@ -126,7 +156,7 @@ importScripts("./download-utils.worker.js");
      * 批量暂停下载
      * @returns {Promise<void>}
      */
-    async function batchPauseProcessTask() {
+    async function batchPauseProcessTask(data) {
 
     }
 
@@ -134,7 +164,7 @@ importScripts("./download-utils.worker.js");
      * 继续下载
      * @returns {Promise<void>}
      */
-    async function resumeProcessTask() {
+    async function resumeProcessTask(data) {
 
     }
 
@@ -142,7 +172,7 @@ importScripts("./download-utils.worker.js");
      * 批量继续下载
      * @returns {Promise<void>}
      */
-    async function batchResumeProcessTask() {
+    async function batchResumeProcessTask(data) {
 
     }
 
@@ -151,7 +181,7 @@ importScripts("./download-utils.worker.js");
      * 取消下载
      * @returns {Promise<void>}
      */
-    async function cancelProcessTask() {
+    async function cancelProcessTask(data) {
 
     }
 
@@ -160,7 +190,7 @@ importScripts("./download-utils.worker.js");
      * 批量取消下载
      * @returns {Promise<void>}
      */
-    async function batchCancelProcessTask() {
+    async function batchCancelProcessTask(data) {
 
     }
 
@@ -169,12 +199,41 @@ importScripts("./download-utils.worker.js");
         await initDBAndTable();
         if (event.data.type === "startDownload") {
             console.log("初始化")
-            await initDownLoaderInstanceAndProcessTask(event.data);
+            // await initDownLoaderInstanceAndProcessTask(event.data);
         }
 
-        // console.log(DOWNLOAD_TYPE_WORKER);
+        const {type} = event.data;
 
-        // console.log(event)
+        switch (type) {
+            case 'start':
+                await initDownLoaderInstanceAndProcessTask(event.data);
+                break;
+
+            case 'pause-file':
+                await pauseProcessTask(event.data);
+                break;
+
+            case 'resume-file':
+                await resumeProcessTask(event.data);
+                break;
+
+            case 'cancel-file':
+                await cancelProcessTask(event.data)
+                break;
+
+            case 'pause-all':
+                await pauseProcessTask(event.data);
+                break;
+
+            case 'cancel-all':
+                await batchCancelProcessTask(event.data);
+                // currentController?.cancelAll();
+                break;
+            case 'resume-all':
+                await batchCancelProcessTask(event.data);
+                break;
+
+        }
     }
 
 

@@ -69,7 +69,7 @@
         DOWNLOADING: 1,
         // 暂停下载
         PAUSE_DOWNLOAD: 2,
-        // 重新下载
+        // 重启下载
         RESUME_DOWNLOAD: 3,
         // 下载失败重试中
         FAIL_DOWNLOAD_RETRY: 4,

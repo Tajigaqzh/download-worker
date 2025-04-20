@@ -1,19 +1,19 @@
 <template>
-  <!--    <DownloadFile></DownloadFile>-->
-  <!--  <DownloadZip></DownloadZip>-->
-  <!--  <DownloadDemo></DownloadDemo>-->
-
+  <div class="upload" @click="()=>{
+    open();
+  }"></div>
   <button @click="getAll">查询</button>
   <button @click="test">测试</button>
+  <button @click="pause">暂停</button>
 </template>
 
 <script setup lang="ts">
 import {onBeforeUnmount, onMounted, ref} from "vue";
-import {useWebWorker} from '@vueuse/core'
+import {useFileDialog, useWebWorker} from '@vueuse/core'
 import {v4 as uuidV4} from 'uuid';
 import {DOWNLOAD_STATUS} from "./DownLoadStatus.ts";
-import db from "./indexDBUtils.ts";
 
+//                     "filePath": "https://fileoss.zaichengzhang.net/Oss/ClassPlatWeb/Video/20250418/a11b0a9a-b759-4f99-ae8d-b3d08a56daab.mp4",
 
 // import
 const {data, post, terminate, worker} = useWebWorker('download.worker.js')
@@ -21,28 +21,36 @@ const {data, post, terminate, worker} = useWebWorker('download.worker.js')
 const taskId = ref("")
 
 function getAll() {
-  db.getAll("uploadTask").then(res => {
-    console.log(res);
-  })
+
 }
+
+
+const {open, onChange} = useFileDialog({
+  directory: false, // Select directories instead of files if set true
+  reset: true
+});
 
 onMounted(() => {
   window.addEventListener("online", () => {
     console.log("网络已连接")
   });
-  window.addEventListener("offline",()=>{
+  window.addEventListener("offline", () => {
     console.log("网络已断开")
   })
+})
+
+onChange((f) => {
+  console.log(f);
+
 })
 
 function test() {
   taskId.value = uuidV4();
   const batchId = uuidV4();
-  const date = new Date();
 
 
   post({
-    type: 'startDownload',
+    type: 'start',
     downloadType: 1,
     zipName: "",
     taskList: [
@@ -50,10 +58,9 @@ function test() {
         // 批次id
         batchId: batchId,
         // 任务id
-        taskId: uuidV4(),
+        taskId: taskId.value,
         // 下载路径
-        url: "https://fileoss.zaichengzhang.net/Oss/iOS/TeacherMobile/20250410/Photo/03BCE688-B815-4183-B2C4-3AB1C7F24B0E.jpg",
-        // 压缩模式的压缩路径
+        url: "https://fileoss.zaichengzhang.net/Oss/ClassPlatWeb/Video/20250418/a11b0a9a-b759-4f99-ae8d-b3d08a56daab.mp4",        // 压缩模式的压缩路径
         path: "",
         // 用户id
         userId: "12323423545",
@@ -112,6 +119,16 @@ function test() {
   })
 }
 
+function pause() {
+  post({
+    type: 'pause-file',
+    downloadType: 1,
+    zipName: "",
+    taskId: taskId.value
+
+  })
+}
+
 onBeforeUnmount(() => {
   terminate();
 })
@@ -156,5 +173,12 @@ onBeforeUnmount(() => {
 
 .logo.vue:hover {
   filter: drop-shadow(0 0 2em #42b883aa);
+}
+
+.upload {
+  width: 100px;
+  height: 100px;
+  background-color: #f9f9f9;
+  cursor: pointer;
 }
 </style>

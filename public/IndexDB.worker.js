@@ -317,7 +317,7 @@
          * 添加数据，如果主键已存在则更新
          * @param storeName
          * @param data
-         * @returns Promise<IDBValidKey>返回主键key
+         * @returns Promise<IDBValidKey> 返回主键key
          */
         async put(storeName, data) {
             return this.#execute(storeName, "readwrite", (store) => {

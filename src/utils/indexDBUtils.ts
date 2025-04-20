@@ -35,6 +35,11 @@ class IndexedDBSingleton {
         IndexedDBSingleton.instance = this;
     }
 
+    public isExistDB() {
+        return this.db !== null
+    }
+
+
     /**
      * 检查表是否存在
      * @param tableName
@@ -429,10 +434,62 @@ interface IndexConfig {
 }
 
 // 创建并导出单例实例
-const dbInstance = new IndexedDBSingleton({
+let dbInstance = new IndexedDBSingleton({
     dbName: "classPlatWebDB"
 });
-// initialize，内部包含更新版本号，是异步的，必须要await
-await dbInstance.initialize();
 
-export default dbInstance;
+
+export const getDBInstance = async () => {
+    if (dbInstance.isExistDB()) {
+        return dbInstance;
+    }
+    await dbInstance.initialize();
+    return dbInstance;
+}
+// let dbInstance = new IndexedDBSingleton();
+// initialize，内部包含更新版本号，是异步的，必须要await
+// await dbInstance.initialize();
+
+// export default dbInstance;
+/**
+ // 创建并导出单例实例
+ let dbInstance = new IndexedDBSingleton();
+ // initialize，内部包含更新版本号，是异步的，必须要await
+ // await dbInstance.initialize();
+
+ export const getDBInstance = async () => {
+ if (dbInstance.isExistDB()) {
+ return dbInstance;
+ }
+ await dbInstance.initialize();
+ return dbInstance;
+ }
+
+
+ // 另一个版本的初始化表
+ const initRecordDBModel = async () => {
+ const instance = await getDBInstance();
+
+ console.log("我被执行了")
+ if (!instance.isExistTable(STORE_NAME)) {
+ //不存在表
+ await instance.addStore({
+ name: STORE_NAME,
+ // STORE创建参数
+ options: {keyPath: "questionId"},
+ // 索引配置
+ indexes: [
+ {
+ name: "questionIdIndex",
+ keyPath: "questionId",
+ options: {unique: true}
+ }
+ ]
+ })
+ return instance;
+ } else {
+ return instance;
+ }
+ }
+
+ */
