@@ -10,13 +10,13 @@ Learn more about the recommended Project Setup and IDE Support in the [Vue Docs 
 ```bash
 # 压缩 操作工具类
 npx terser .\public\download\download-utils.worker.js -o .\public\download\download-utils.worker.main.js -m -c
-# 手动更新工具类引用
+# 手动更新工具类引用  将public/download下的所有importScripts('./download-utils.worker.js');替换为importScripts('./download-utils.worker.main.js');
 # 压缩 数据库类
 npx terser .\public\download\IndexDB.worker.js -o .\public\download\IndexDB.worker.main.js -m -c
-# 手动更新数据库类引用
+# 手动更新数据库类引用  将public/download下的所有importScripts('./IndexDB.worker.js');替换为importScripts('./IndexDB.worker.main.js');
 # 压缩 下载类
 npx terser .\public\download\downloader.worker.js -o .\public\download\downloader.worker.main.js -m -c
-# 手动更新下载类引用
+# 手动更新下载类引用  将public/download下的所有importScripts('./downloader.worker.js');替换为importScripts('./downloader.worker.main.js');
 # 压缩 下载使用类
 npx terser .\public\download\download.worker.js -o .\public\download\download.worker.main.js -m -c
 

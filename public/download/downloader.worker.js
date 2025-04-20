@@ -1,7 +1,7 @@
 "use strict";
-importScripts('./lib/jszip.min.js');
-importScripts("./download-utils.worker.js");
 
+importScripts('download-utils.worker.js');
+importScripts('./lib/jszip.min.js');
 
 /**
  * 文件下载器

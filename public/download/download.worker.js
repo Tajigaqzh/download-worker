@@ -1,11 +1,12 @@
 "use strict";
-importScripts('./IndexDB.worker.main.js');
-importScripts("./downloader.worker.js");
-importScripts("./download-utils.worker.js");
+
+importScripts('./IndexDB.worker.js');
+importScripts('./downloader.worker.js');
+importScripts('./download-utils.worker.js');
 
 
 // 用闭包防止污染
-(() => {
+(function() {
     // 数据库是否初始化
     let isInitDB = false;
 
@@ -238,5 +239,8 @@ importScripts("./download-utils.worker.js");
 
 
 })()
+
+
+
 
 
