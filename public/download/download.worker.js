@@ -87,6 +87,10 @@ importScripts('./download-utils.worker.js');
     const downloadCallback = (message) => {
         // console.log("回调", message)
 
+        if (message.type && message.type=="complete") {
+            self.postMessage(message);
+        }
+
     }
 
     /**
@@ -166,7 +170,15 @@ importScripts('./download-utils.worker.js');
      * @returns {Promise<void>}
      */
     async function resumeProcessTask(data) {
-
+        if (isInitDB) {
+            switch (data.downloadType) {
+                case DOWNLOAD_TYPE_WORKER.FILE_LIST: {
+                    console.log("收到指令",data);
+                    await listDownLoaderInstance.resumeTask(data.taskId);
+                    break;
+                }
+            }
+        }
     }
 
     /**

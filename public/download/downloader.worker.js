@@ -279,20 +279,20 @@ importScripts('./lib/jszip.min.js');
             if (resumeTask) {
                 resumeTask.status = DOWNLOAD_STATUS.RESUME_DOWNLOAD;
 
+                // 手动更新状态
                 await this.changeDBCache(resumeTask, {
                     changeStatus: true
                 })
 
 
-                // 当前有等待下载的的任务
-                if (this.tasks.length > 0) {
+                // 当前有正在执行的任务，直接放入队列结束后就会执行
+                if (this.activeDownloadsMap.size > 0) {
                     // 创建一个任务
                     // 直接放入
 
                     this.tasks.push(resumeTask);
                 } else {
                     // 创建一个任务，newPromise
-
                     const config = this.getConfig();
                     // }
 
@@ -374,7 +374,7 @@ importScripts('./lib/jszip.min.js');
 
             this.activeDownloadsMap.set(taskItem.taskId, abortController);
 
-            const {maxRetries, waitTime} = config;
+            const { maxRetries, waitTime } = config;
 
             let isCurrentSuccess = false;
 
@@ -536,6 +536,7 @@ importScripts('./lib/jszip.min.js');
 
             if (isResume && cacheData.totalSize) {
                 totalSize = cacheData.totalSize;
+                debugger;
             }
 
 
@@ -573,7 +574,7 @@ importScripts('./lib/jszip.min.js');
                             await this.saveToCache(cacheData);
 
 
-                            // 删除下载
+                            // 删除下载controller
                             this.activeDownloadsMap.delete(cacheData.taskId);
 
                             console.log("下载已暂停");
@@ -595,7 +596,7 @@ importScripts('./lib/jszip.min.js');
                     }
 
                     // 读取数据块
-                    const {done, value} = await reader.read();
+                    const { done, value } = await reader.read();
                     if (done) break;
 
                     // 更新下载状态
@@ -635,6 +636,20 @@ importScripts('./lib/jszip.min.js');
             }
 
             const result = await this.mergeChunks(cacheData, contentType, true);
+            // 执行完后删除下载任务
+            this.activeDownloadsMap.delete(cacheData.taskId);
+
+            this.callback({
+                type: 'complete',
+                fileId: fileItem.taskId,
+                blob: result.blob,
+                totalSize: result.totalSize,
+                downloaded: result.downloaded,
+                progress: 100,
+                startTimestamp: cacheData.startTimestamp,
+                endTimestamp: cacheData.endTimestamp,
+                status: DOWNLOAD_STATUS.COMPLETE_DOWNLOAD,
+            })
             console.log(result);
         }
 
@@ -682,8 +697,6 @@ importScripts('./lib/jszip.min.js');
                 blob: null,
                 lastUpdated: Date.now()
             };
-
-            console.log(mergedData, "合并的")
 
             // 保存到数据库
             await this.changeDBCache(mergedData);
@@ -766,16 +779,22 @@ importScripts('./lib/jszip.min.js');
          * @param data
          * @returns {Promise<void>}
          */
-        async process(data, processConfig = {
-            isResume: false
+        async process(data = [], processConfig = {
+            isResume: false,
+            isHasNew: false,
         }) {
 
-            // 先不考虑调用process的问题
-            // if (processConfig.isResume) {
-            //     // data，todo 在外面添加任务
-            // } else {
-            await this.addDBCache(data.taskList);
-            this.tasks.push(...data.taskList);
+
+            // 外部调用传入的任务队列
+            if (!processConfig.isHasNew) {
+                await this.addDBCache(data.taskList);
+                this.tasks.push(...data.taskList);
+            }
+            // else是内部调用传入的任务队列，不用再添加到cache和tasks中
+
+            // bytes 23414801-44829364/44829365
+
+            // 长度  21414564  13351960
             const config = this.getConfig();
             // }
 
@@ -815,9 +834,13 @@ importScripts('./lib/jszip.min.js');
                 .map(() => taskFn());
 
             await Promise.all(workers);
+
+            // 当前任务执行完之后，如果tasks不为空，继续执行
+
+            if (this.tasks.length > 0) {
+                await this.process([], { isHasNew: true });
+            }
         }
-
-
     }
 
 
