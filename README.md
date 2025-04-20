@@ -25,3 +25,6 @@ npx terser .\public\download\download.worker.js -o .\public\download\download.wo
 
 
 todo 使用gulp简化打包流程 实现代码压缩
+
+todo 继续下载还有问题
+

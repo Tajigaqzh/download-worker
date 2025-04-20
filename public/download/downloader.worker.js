@@ -614,8 +614,8 @@ importScripts('./lib/jszip.min.js');
                         total: totalSize
                     });
 
-                    // 定时保存（每5秒或每2MB）
-                    if (Date.now() - lastSaveTime >= 5000 || cacheData.chunks.length > 200) {
+                    // 定时保存（每5秒）
+                    if (Date.now() - lastSaveTime >= 5000) {
                         await this.saveToCache(cacheData);
                         lastSaveTime = Date.now();
                     }
